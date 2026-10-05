@@ -1,0 +1,4 @@
+build/
+chronofs
+*.o
+.DS_Store
