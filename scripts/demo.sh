@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # ChronoFS end-to-end demo.
 #
-#   ./scripts/demo.sh            run straight through
-#   ./scripts/demo.sh --pause    wait for Enter between steps (for presenting)
+#   ./scripts/demo.sh               run straight through
+#   ./scripts/demo.sh --pause       wait for Enter between steps (for presenting)
+#   ./scripts/demo.sh --interactive also open the ncurses timeline browser
+#                                   mid-demo, while the history is rich
 #
 # On macOS this re-runs itself inside the Docker dev container.
 set -euo pipefail
@@ -13,7 +15,14 @@ if [ "$(uname)" != "Linux" ]; then
 fi
 
 PAUSE=0
-[ "${1:-}" = "--pause" ] && PAUSE=1
+INTERACTIVE=0
+for arg in "$@"; do
+    case "$arg" in
+        --pause) PAUSE=1 ;;
+        --interactive|-i) INTERACTIVE=1 ;;
+        *) echo "demo.sh: unknown option '$arg'" >&2; exit 2 ;;
+    esac
+done
 
 BIN="$PWD/chronofs"
 export PATH="$PWD:$PATH"
@@ -39,7 +48,9 @@ trap cleanup EXIT
 
 [ -x "$BIN" ] || make -s
 cleanup
-rm -rf "$BASE"
+# Step 7 may have copied read-only snapshot permissions into current/.
+chmod -R u+w "$BASE" 2>/dev/null || true
+rm -rf "$BASE" || true
 mkdir -p "$S" "$M"
 
 step "1. Mount a fresh ChronoFS store"
@@ -98,6 +109,21 @@ echo "${dim}(two 2 MiB versions, but only one new 4 KiB block was stored)${reset
 step "10. LRU block cache for reading history"
 run "for i in 1 2 3; do cat .snapshots/@$T3/data.bin > /dev/null; done"
 run "cat .chronofs/stats"
+
+if [ "$INTERACTIVE" = 1 ]; then
+    step "10b. Interactive timeline browser"
+    cat <<EOF
+${dim}The store still has all of its history.  This opens the TUI (ncurses);
+press q to leave it and the demo continues to unmount + GC.${reset}
+${bold}  Up/Down  rewind the timeline - the tree and preview follow that instant
+  Tab      move between the timeline pane and the file tree
+  Enter    open a directory;  Bksp  go back to the parent
+  t        tag the selected moment;  r  restore the highlighted file
+  n        jump to the live tree;  ?  help;  q  quit${reset}
+EOF
+    "$BIN" tui "$S" || true
+    echo
+fi
 
 step "11. Offline browsing without the mount"
 run "chronofs ls $S --at @$T2"

@@ -21,6 +21,7 @@ static void usage(FILE *f)
         "              mount the store; every write is versioned.\n"
         "              browse history at <mountpoint>/.snapshots/<when>/\n"
         "  umount  <mountpoint>                  unmount\n"
+        "  tui     <store> [--at WHEN]           interactive timeline browser\n"
         "  log     <store> [path] [-n N]         show version history\n"
         "  ls      <store> [dir] [--at WHEN]     list a directory as it was\n"
         "  cat     <store> <path> [--at WHEN]    print a file as it was\n"
@@ -125,7 +126,8 @@ int main(int argc, char **argv)
         int (*fn)(int, char **);
     } cmds[] = {
         { "mount", cmd_mount },   { "umount", cmd_umount }, { "unmount", cmd_umount },
-        { "log", cmd_log },       { "ls", cmd_ls },         { "cat", cmd_cat },
+        { "tui", cmd_tui },       { "log", cmd_log },       { "ls", cmd_ls },
+        { "cat", cmd_cat },
         { "restore", cmd_restore }, { "tag", cmd_tag },     { "stats", cmd_stats },
         { "gc", cmd_gc },
     };

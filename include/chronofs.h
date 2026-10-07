@@ -163,6 +163,7 @@ int  fs_main(struct store *st, const char *mountpoint, int argc, char **argv,
              size_t cache_blocks);
 
 /* ---- cmd.c / gc.c ---- */
+int cmd_tui(int argc, char **argv);
 int cmd_log(int argc, char **argv);
 int cmd_tag(int argc, char **argv);
 int cmd_ls(int argc, char **argv);

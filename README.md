@@ -1,7 +1,7 @@
 # ChronoFS — a time-travel filesystem in C (FUSE)
 
-ChronoFS is a userspace filesystem that **versions every write**. It mounts like a normal
-directory, but the past is always one path away:
+ChronoFS is a userspace filesystem. It **versions every write**. It mounts as a normal
+directory. The past is always one path away:
 
 ```bash
 ls -t  mnt/.snapshots/2min-ago/
@@ -9,21 +9,30 @@ cat    mnt/.snapshots/@19:53:12/notes.txt
 cp -r  mnt/.snapshots/before-disaster/src  mnt/
 ```
 
-It's built on [libfuse 3](https://github.com/libfuse/libfuse) and uses a content-addressed
-block store with deduplication, an append-only journal, an LRU block cache, and
-mark-and-sweep garbage collection. Everything is plain C with no dependencies beyond libfuse.
+ChronoFS uses [libfuse 3](https://github.com/libfuse/libfuse). It stores data in a
+content-addressed block store with deduplication. It writes an append-only journal. It
+caches blocks in an LRU cache. It reclaims space with mark-and-sweep garbage collection.
+The core is plain C and needs only libfuse. The optional timeline browser also needs ncurses.
 
 ## Quick start
 
-FUSE needs a Linux kernel. On macOS (or Windows), the provided Docker container gives you one.
+FUSE needs a Linux kernel. On macOS or Windows, use the provided Docker container. The
+container gives you a Linux kernel.
 
 ```bash
 ./scripts/dev.sh            # opens a Linux shell with FUSE enabled, repo at /src
 make                        # builds ./chronofs
 ./scripts/demo.sh           # scripted end-to-end demo (add --pause to step through)
+./scripts/demo.sh --interactive   # same demo, then browse the history in a TUI
 ```
 
-On a Linux machine, skip Docker and install `libfuse3-dev fuse3 pkg-config build-essential`, then run `make`.
+On a Linux machine, you can skip Docker. Install `libfuse3-dev fuse3 pkg-config build-essential`.
+Then run `make`.
+
+The interactive timeline browser (`chronofs tui`) is optional. It uses ncurses. If the build
+finds `ncursesw`, it compiles the browser in. If not, `make` builds everything else, and
+`chronofs tui` tells you how to enable the browser. Install `libncurses-dev` (Debian/Ubuntu)
+or `ncurses-devel` (Fedora). Then run `make clean && make`.
 
 ## Using it
 
@@ -45,7 +54,7 @@ cat .chronofs/stats                       # live cache / version statistics
 
 ### Naming a point in time
 
-Anywhere a time is accepted (`.snapshots/<WHEN>/` or `--at <WHEN>`):
+You can use a time in two places: `.snapshots/<WHEN>/` and `--at <WHEN>`.
 
 | Form | Example | Meaning |
 |---|---|---|
@@ -60,15 +69,49 @@ Anywhere a time is accepted (`.snapshots/<WHEN>/` or `--at <WHEN>`):
 
 | Command | What it does |
 |---|---|
-| `chronofs mount <store> <mnt> [-f] [-d] [--cache-blocks N]` | mount; history appears under `<mnt>/.snapshots/` |
-| `chronofs umount <mnt>` | unmount |
-| `chronofs log <store> [path] [-n N]` | version history (writes, deletes, mkdirs) |
-| `chronofs ls <store> [dir] --at WHEN` | list a directory as it was, without mounting |
-| `chronofs cat <store> <path> --at WHEN` | print a file as it was |
-| `chronofs restore <store> <path> --at WHEN [-o dest]` | restore a file or a whole directory. If the store is mounted, the restore goes through the mount, so it becomes a new version too |
-| `chronofs tag <store> [name] [--at WHEN]` | name a moment, or list tags |
-| `chronofs stats <store>` | versions, blocks on disk, dedup ratio |
-| `chronofs gc <store> --keep 1h [--dry-run]` | drop history older than 1h and free unreferenced blocks (store must be unmounted) |
+| `chronofs mount <store> <mnt> [-f] [-d] [--cache-blocks N]` | Mount the store. History appears under `<mnt>/.snapshots/`. |
+| `chronofs umount <mnt>` | Unmount the store. |
+| `chronofs tui <store> [--at WHEN]` | Open the interactive timeline browser (ncurses, optional). |
+| `chronofs log <store> [path] [-n N]` | Show the version history (writes, deletes, mkdirs). |
+| `chronofs ls <store> [dir] --at WHEN` | List a directory as it was, without a mount. |
+| `chronofs cat <store> <path> --at WHEN` | Print a file as it was. |
+| `chronofs restore <store> <path> --at WHEN [-o dest]` | Restore a file or a whole directory. If the store is mounted, the restore uses the mount. The restore then becomes a new version too. |
+| `chronofs tag <store> [name] [--at WHEN]` | Name a moment, or list the tags. |
+| `chronofs stats <store>` | Show the versions, the blocks on disk, and the dedup ratio. |
+| `chronofs gc <store> --keep 1h [--dry-run]` | Remove history older than 1h. Free the unreferenced blocks. The store must be unmounted. |
+
+### Interactive timeline browser
+
+`chronofs tui <store>` opens a browser with three panes. The browser uses ncurses and reads
+the store directly. It does not need a mount. Move the timeline cursor to rewind the tree and
+the preview to that instant:
+
+```
++---------------------------------------------------------------+
+| Timeline: every journal change, newest first                  |
++--------------------------+------------------------------------+
+| Tree at the chosen moment| Preview of the highlighted file    |
++--------------------------+------------------------------------+
+| hints / messages                                              |
++---------------------------------------------------------------+
+```
+
+| Key | Action |
+|---|---|
+| Up / Down | move in the focused pane (timeline rewinds the tree) |
+| PgUp / PgDn | page (scrolls the preview when the tree pane is focused) |
+| Tab | switch focus: timeline ↔ tree |
+| Enter / Backspace | open a directory / go to the parent |
+| Home / End | newest / oldest moment |
+| `n` | jump to the live tree |
+| `t` | tag the selected moment |
+| `r` | restore the highlighted file or directory at that moment |
+| `/` | filter the tree by substring |
+| `?` | help · `R` reload from disk · `q` quit |
+
+If the store is mounted, a restore uses the mount. The restore then becomes a new version
+too. If the store is not mounted, a restore writes into `current/`, and the journal records
+the new version.
 
 ## How it works
 
@@ -84,41 +127,48 @@ Anywhere a time is accepted (`.snapshots/<WHEN>/` or `--at <WHEN>`):
                                                                          → manifest → blocks (via LRU cache)
 ```
 
-- **Store layout:** `current/` holds live files, `objects/` holds deduplicated data blocks,
-  `manifests/` holds per-version block lists, and `journal.log` is an append-only array of
-  fixed-size 1096-byte records.
-- **When versions are taken:** at `close()`, i.e. `flush`, after the file was written. Also on `fsync()`, and after
-  `truncate`, `chmod` and `utime`. Versioning each write session rather than each `write()` syscall
-  keeps a 1 MB `cp`, which is ~8 kernel write requests, from becoming 8 versions.
-- **Deletes and renames** are journaled too: deletes as tombstones, and renames as "new path, same
-  manifest", so a rename copies no data. Past snapshots therefore still show deleted and moved files.
-- **The in-memory index** is a hash table from each path to its versions sorted by time. A lookup at time T is
-  a hash lookup plus a binary search. A `pthread_rwlock_t` protects it, because libfuse
-  serves requests from several threads.
-- **Crash safety:** objects are written to a temp file and then `rename()`d. Each journal record is a single
-  `O_APPEND` `write()`. On mount, the journal is reconciled with `current/` (anything changed while
-  unmounted gets recorded, which works like a tiny fsck).
-- **One daemon per store**, enforced with `flock()`. `gc` refuses to run while the store is mounted.
+- **Store layout:** `current/` holds the live files. `objects/` holds the deduplicated data
+  blocks. `manifests/` holds the block list of each version. `journal.log` is an append-only
+  array of fixed-size 1096-byte records.
+- **When versions are taken:** at `close()` (that is, `flush`), after a write to the file.
+  Also on `fsync()`, and after `truncate`, `chmod`, and `utime`. A version is taken for each
+  write session, not for each `write()` syscall. A 1 MB `cp` makes about 8 kernel write
+  requests. This rule keeps those 8 requests from becoming 8 versions.
+- **Deletes and renames** are journaled too. A delete is a tombstone. A rename records the
+  new path and the same manifest, so the rename copies no data. Past snapshots therefore
+  still show deleted and moved files.
+- **The in-memory index** is a hash table. It maps each path to its versions, sorted by time.
+  A lookup at time T is a hash lookup and a binary search. A `pthread_rwlock_t` protects the
+  index, because libfuse serves requests from several threads.
+- **Crash safety:** the code writes each object to a temp file, then renames the temp file.
+  Each journal record is a single `O_APPEND` `write()`. At mount time, the code reconciles
+  the journal with `current/`. The code records anything that changed while the store was
+  unmounted. This step works like a small fsck.
+- **One daemon per store:** `flock()` enforces this limit. `gc` refuses to run while the
+  store is mounted.
 
 ## Source map
 
 | File | Purpose |
 |---|---|
 | `src/main.c` | CLI entry point and the `mount`/`umount` subcommands |
-| `src/fs.c` | all FUSE callbacks, the `.snapshots/` and `.chronofs/` virtual trees, mount-time reconcile |
+| `src/fs.c` | all FUSE callbacks, the `.snapshots/` and `.chronofs/` virtual trees, and reconciliation at mount time |
 | `src/journal.c` | journal file, path→versions hash index, store open/close |
 | `src/blockstore.c` | block and manifest storage, file snapshotting, reading old versions |
 | `src/lru.c` | LRU cache of 4 KiB blocks (hash map + doubly linked list) |
 | `src/timeparse.c` | `2min-ago` / `@19:53:12` / tag parsing, formatting helpers |
 | `src/gc.c` | retention plus mark-and-sweep garbage collection |
 | `src/cmd.c` | `log`, `ls`, `cat`, `restore`, `tag`, `stats` |
+| `src/tui.c` | optional ncurses timeline browser (`chronofs tui`) |
 | `src/sha256.c` | self-contained SHA-256 |
 
 ## Limitations
 
-- Symlinks are passed through but not versioned. Hard links aren't supported.
-- A version is the file's content at close/fsync. A long-running writer that never closes or fsyncs the file
-  produces no intermediate versions.
-- Each snapshot rehashes the whole file (only *new* blocks are written). Insert-in-the-middle
-  edits shift every later block, so fixed-size blocks dedup them poorly (content-defined chunking would fix this).
-- A snapshot directory listing scans every tracked path, which is O(paths). That's fine for project-sized trees.
+- ChronoFS passes symlinks through, but does not version them. It does not support hard links.
+- A version is the content of the file at close or fsync. A writer that runs for a long time
+  and never closes or fsyncs the file produces no intermediate versions.
+- Each snapshot rehashes the whole file. Only *new* blocks are written. An edit in the middle
+  of a file shifts every later block, so fixed-size blocks deduplicate those blocks poorly.
+  Content-defined chunking would fix this.
+- A snapshot directory listing scans every tracked path. The cost is O(paths). This cost is
+  acceptable for project-sized trees.
