@@ -180,11 +180,12 @@ export default function TimeRail() {
   return (
     <div className="wrap">
       <div className="rail" id="rail" aria-labelledby="rail-h">
+        <div className="perf" aria-hidden="true" />
         <div className="rail__head">
           <h2 className="rail__label" id="rail-h">
-            Time rail<span>drag · or ← →</span>
+            Time rail<span>reel 01 · {N} frames</span>
           </h2>
-          <p className="rail__hint">each tick is one journal record</p>
+          <p className="rail__hint">drag · ← → · home / end</p>
         </div>
 
         <div className="rail__stage">
@@ -217,12 +218,13 @@ export default function TimeRail() {
                   key={`${m.path}-${i}`}
                   type="button"
                   className="tick"
-                  data-op={m.op}
                   style={{ left: `${N <= 1 ? 0 : (i / (N - 1)) * 100}%` }}
                   aria-label={`${m.op} ${m.path}, ${m.ago}`}
                   aria-pressed={i === index}
                   onClick={() => select(i)}
-                />
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </button>
               ))}
             </div>
             <div className="track__fill" style={{ width: `${pct}%` }} />
@@ -232,7 +234,10 @@ export default function TimeRail() {
           <div className="readout">
             <div className="pane">
               <h3 className="pane__title">
-                journal record <b>{moment.op}</b>
+                journal record{" "}
+                <b>
+                  {String(index + 1).padStart(2, "0")}/{String(N).padStart(2, "0")}
+                </b>
               </h3>
               <pre>
                 <b>time</b>     {moment.clock}
@@ -290,6 +295,7 @@ export default function TimeRail() {
             </div>
           </div>
         </div>
+        <div className="perf" aria-hidden="true" />
       </div>
     </div>
   );

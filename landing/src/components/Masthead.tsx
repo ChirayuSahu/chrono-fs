@@ -25,12 +25,24 @@ export default function Masthead() {
     <header className="masthead">
       <div className="wrap masthead__inner">
         <a className="brand" href="#top">
-          chrono<b>fs</b>
+          chrono<em>fs</em>
         </a>
         <p className="masthead__status">
           <span className="dot" aria-hidden="true" />
-          mounted on /tmp/mnt <span aria-hidden="true">·</span>{" "}
-          <time dateTime={now.toISOString()}>{formatTime(now)}</time>
+          <span className="masthead__rec">REC</span>
+          <span aria-hidden="true">·</span>
+          <span>
+            TC{" "}
+            <b>
+              <time dateTime={now.toISOString()}>{formatTime(now)}</time>
+            </b>
+          </span>
+          <span className="masthead__sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="masthead__mount">
+            mounted <b>/tmp/mnt</b>
+          </span>
         </p>
         <nav className="masthead__nav" aria-label="Sections">
           {LINKS.map((link) => (

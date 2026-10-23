@@ -7,12 +7,17 @@ interface SectionProps {
   label: string;
   title: ReactNode;
   intro?: ReactNode;
+  tone?: "ink" | "paper";
   children?: ReactNode;
 }
 
-export default function Section({ id, num, label, title, intro, children }: SectionProps) {
+export default function Section({ id, num, label, title, intro, tone = "ink", children }: SectionProps) {
   return (
-    <section className="section" id={id} aria-labelledby={`${id}-h`}>
+    <section
+      className={tone === "paper" ? "section section--paper" : "section"}
+      id={id}
+      aria-labelledby={`${id}-h`}
+    >
       <div className="wrap section__grid">
         <div className="spine" aria-hidden="true">
           <span className="spine__num">{num}</span>

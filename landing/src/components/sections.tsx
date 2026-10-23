@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Section from "./Section";
 import { revealDelay } from "../hooks/useScrollReveal";
+import { INSTALL_CMD } from "../install";
 
 /* ---------------------------------------------------------------- 01 */
 export function Storage() {
@@ -179,24 +180,28 @@ export function Pipeline() {
         </>
       }
     >
-      <div className="pipeline">
-        {STAGES.map((stage, i) => (
-          <article className="stage" key={stage.n} data-reveal style={revealDelay(i * 80)}>
-            <span className="stage__node" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              >
-                {stage.icon}
-              </svg>
-            </span>
-            <p className="stage__n">{stage.n}</p>
-            <h3 className="stage__h">{stage.h}</h3>
-            <p className="stage__p">{stage.p}</p>
-          </article>
-        ))}
+      <div className="strip">
+        <div className="perf" aria-hidden="true" />
+        <div className="pipeline">
+          {STAGES.map((stage, i) => (
+            <article className="stage" key={stage.n} data-reveal style={revealDelay(i * 80)}>
+              <span className="stage__node" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                >
+                  {stage.icon}
+                </svg>
+              </span>
+              <p className="stage__n">{stage.n}</p>
+              <h3 className="stage__h">{stage.h}</h3>
+              <p className="stage__p">{stage.p}</p>
+            </article>
+          ))}
+        </div>
+        <div className="perf" aria-hidden="true" />
       </div>
     </Section>
   );
@@ -224,6 +229,7 @@ export function Nomenclature() {
       id="names"
       num="03"
       label="Nomenclature"
+      tone="paper"
       title={
         <>
           Name a moment the way you <em>read a path</em>.
@@ -359,16 +365,14 @@ export function Boot() {
       <div className="boot" style={{ marginTop: "var(--s5)" }}>
         <div className="term" data-reveal>
           <div className="term__bar">
-            <span className="term__d" />
-            <span className="term__d" />
-            <span className="term__d" />
-            <span className="term__name">~/chrono-fs — build</span>
+            <span className="term__rec" aria-hidden="true" />
+            <span className="term__name">Setup · take 01</span>
+            <span className="term__meta">Linux</span>
           </div>
           <pre>
-            <span className="c"># install (Linux): builds it and puts chronofs on PATH</span>
+            <span className="c"># install: builds it and puts chronofs on PATH</span>
             {"\n"}
-            <span className="p">$</span> curl -fsSL
-            https://raw.githubusercontent.com/ChirayuSahu/chrono-fs/main/install.sh | bash
+            <span className="p">$</span> {INSTALL_CMD}
             {"\n\n"}
             <span className="c"># or from the repo — macOS or Windows gets a Linux shell via Docker</span>
             {"\n"}
@@ -388,10 +392,9 @@ export function Boot() {
 
         <div className="term" data-reveal style={revealDelay(100)}>
           <div className="term__bar">
-            <span className="term__d" />
-            <span className="term__d" />
-            <span className="term__d" />
-            <span className="term__name">~/chrono-fs — mount</span>
+            <span className="term__rec" aria-hidden="true" />
+            <span className="term__name">Mount · take 02</span>
+            <span className="term__meta">Linux</span>
           </div>
           <pre>
             <span className="p">$</span> mkdir -p /tmp/store /tmp/mnt

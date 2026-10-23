@@ -4,12 +4,17 @@ export default function Footer() {
   return (
     <footer className="foot">
       <div className="wrap foot__grid">
-        <p className="foot__mono" data-reveal>
-          A course project for BITE303P Operating Systems Lab. Written in C, built on libfuse
-          3. Journal, block store and garbage collector are plain POSIX — no kernel module,
-          no external database.
-        </p>
-        <p className="foot__sig" data-reveal style={revealDelay(80)}>
+        <div>
+          <p className="foot__mark" data-reveal>
+            End of reel · chronofs v1.0
+          </p>
+          <p className="foot__mono" data-reveal style={revealDelay(60)}>
+            A course project for BITE303P Operating Systems Lab. Written in C, built on
+            libfuse 3. Journal, block store and garbage collector are plain POSIX — no kernel
+            module, no external database.
+          </p>
+        </div>
+        <p className="foot__sig" data-reveal style={revealDelay(120)}>
           <svg
             viewBox="0 0 240 40"
             fill="none"
@@ -22,7 +27,6 @@ export default function Footer() {
               strokeLinecap="round"
             />
           </svg>
-          chronofs · v1.0
         </p>
       </div>
     </footer>

@@ -171,6 +171,18 @@ the new version.
 - **One daemon per store:** `flock()` enforces this limit. `gc` refuses to run while the
   store is mounted.
 
+## Website
+
+The landing page lives in `landing/` (React + Vite, plain CSS). It is a static page: no
+server, no API.
+
+```bash
+cd landing
+npm install
+npm run dev     # local dev server
+npm run build   # production build in landing/dist/
+```
+
 ## Source map
 
 | File | Purpose |

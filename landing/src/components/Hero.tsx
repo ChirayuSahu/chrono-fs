@@ -1,4 +1,6 @@
 import TimeRail from "./TimeRail";
+import CopyCommand from "./CopyCommand";
+import { INSTALL_CMD } from "../install";
 
 export default function Hero() {
   return (
@@ -43,10 +45,14 @@ export default function Hero() {
               Build it
             </a>
           </div>
+
+          <CopyCommand command={INSTALL_CMD} label="Install on Linux" />
         </div>
 
         <aside className="specplate" aria-label="At a glance">
-          <p className="specplate__title">Store · specification</p>
+          <p className="specplate__title">
+            Store · specification <b>v1.0</b>
+          </p>
           <dl>
             <dt>block</dt>
             <dd>4 KiB</dd>
