@@ -14,6 +14,30 @@ content-addressed block store with deduplication. It writes an append-only journ
 caches blocks in an LRU cache. It reclaims space with mark-and-sweep garbage collection.
 The core is plain C and needs only libfuse. The optional timeline browser also needs ncurses.
 
+## Install
+
+Linux, one command. It downloads the source, builds it, and puts `chronofs` on your `PATH`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ChirayuSahu/chrono-fs/main/install.sh | bash
+```
+
+The binary lands in `/usr/local/bin` (the script uses `sudo` only if that directory is not
+writable). It needs `gcc`, `make`, `pkg-config`, and the libfuse3 development files; if one
+is missing, the script prints the `apt`/`dnf` line that installs it. To install elsewhere,
+set `PREFIX`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ChirayuSahu/chrono-fs/main/install.sh | PREFIX="$HOME/.local" bash
+```
+
+After that, run `chronofs` from any directory:
+
+```bash
+chronofs --version
+chronofs mount /tmp/store /tmp/mnt
+```
+
 ## Quick start
 
 FUSE needs a Linux kernel. On macOS or Windows, use the provided Docker container. The
@@ -38,7 +62,7 @@ or `ncurses-devel` (Fedora). Then run `make clean && make`.
 
 ```bash
 mkdir -p /tmp/store /tmp/mnt
-./chronofs mount /tmp/store /tmp/mnt      # -f to stay in the foreground, -d for FUSE debug
+chronofs mount /tmp/store /tmp/mnt      # -f to stay in the foreground, -d for FUSE debug
 
 cd /tmp/mnt
 echo "v1" > notes.txt
@@ -49,7 +73,7 @@ cat .snapshots/1min-ago/notes.txt         # -> v1
 ls -lt .snapshots/                        # every moment something changed
 cat .chronofs/stats                       # live cache / version statistics
 
-./chronofs umount /tmp/mnt
+chronofs umount /tmp/mnt
 ```
 
 ### Naming a point in time

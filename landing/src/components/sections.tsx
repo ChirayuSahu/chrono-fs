@@ -365,7 +365,12 @@ export function Boot() {
             <span className="term__name">~/chrono-fs — build</span>
           </div>
           <pre>
-            <span className="c"># macOS or Windows: Linux shell via Docker</span>
+            <span className="c"># install (Linux): builds it and puts chronofs on PATH</span>
+            {"\n"}
+            <span className="p">$</span> curl -fsSL
+            https://raw.githubusercontent.com/ChirayuSahu/chrono-fs/main/install.sh | bash
+            {"\n\n"}
+            <span className="c"># or from the repo — macOS or Windows gets a Linux shell via Docker</span>
             {"\n"}
             <span className="p">$</span> ./scripts/dev.sh
             {"\n"}
@@ -391,7 +396,7 @@ export function Boot() {
           <pre>
             <span className="p">$</span> mkdir -p /tmp/store /tmp/mnt
             {"\n"}
-            <span className="p">$</span> ./chronofs mount /tmp/store /tmp/mnt
+            <span className="p">$</span> chronofs mount /tmp/store /tmp/mnt
             {"\n"}
             <span className="p">$</span> echo &quot;draft 1&quot; {">"} /tmp/mnt/notes.txt
             {"\n"}
